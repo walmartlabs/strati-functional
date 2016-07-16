@@ -1,0 +1,5 @@
+# Strati Functional
+
+## Introduction
+Strati functional is a set of functional classes intended to make the Java development experience
+more intuitive and less cumbersome.
