@@ -1,0 +1,14 @@
+= Release Notes
+
+[cols="2*", options="header"]
+|===
+|Version
+|Change Log
+
+|0.1.0-SNAPSHOT
+|Initial Upload of Strati Functional
+
+|===
+
+[NOTE]
+See change log for full details. link:changelog.html[click here]

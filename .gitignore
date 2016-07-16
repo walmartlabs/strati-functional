@@ -1,12 +1,44 @@
+
+#Eclips Paths
+.classpath
+.project
+.settings/
+bin/
+
+#IntelliJ Idea Paths
+.idea/
+*.iml
+*.uml
+*.iws
+atlassia*
+
+#Netbeans output
+nbproject
+dist/
+build/
+dbdist/
+nbactions.xml
+nb-configuration.xml
+
+#Apple Paths
+.DS_Store
+
+#Maven Paths
+log/
+target/
+
+#Maven Plugins
+test-output/
+
+#Misc Editor
+*.bak
+*.tmp
+
+#Java File Extensions
 *.class
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.ear
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+rebel.xml
+dependency-reduced-pom.xml
