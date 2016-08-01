@@ -99,7 +99,7 @@ personCache.find(name)
 Firstly notice that Optional allows for a functional style (i.e. expression-based rather than imperative
 statement-based). This is of course a matter of taste and not enforced, you're still free to split up the expression
 into multiple statements if that's your preference. Another interesting fact to notice is that by using the
-compositional methods `flatMap` and `ifPresent` the code becomes much more verbose and easily readable (granted, it
+compositional methods `flatMap` and `ifPresent` the code becomes much more concise and easily readable (granted, it
 might take some time to get used to this functional expression-based style). Even more interestingly, our code is now
 completely safe from null pointers (and hence from `NullPointerExceptions`) but we haven't written a single null check
 ourselves! The methods defined on `Optional` abstract the details of null handling away from us in a type-safe
