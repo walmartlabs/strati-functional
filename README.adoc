@@ -2,4 +2,286 @@
 
 ## Introduction
 Strati functional is a set of functional classes intended to make the Java development experience
-more intuitive and less cumbersome.
+more intuitive and less cumbersome. One of the main purposes of this library is to allow types
+to communicate side-effects via highly compositional types. The library currently exposes the following types:
+
+<1> *Optional* - container for handling nullable values (composable alternative to `java.util.Optional`)
+<2> *Try* - container for handling failures (based on `scala.util.Try`)
+<3> *LazyTry* - compose failable actions in a lazy manner (i.e. defer execution)
+
+These types can be used to make (commonly implicit) effects explicit in the type signatures of your code.
+This allows much more safety and readability since the types tell a larger part of the story as to what happens when
+particular methods are invoked.
+
+## Optional<T>
+
+For example take the following method signature:
+
+[source,java]
+----
+public <T> T getFirst(Collection<T> collection)
+----
+
+The intent of this method is to return only the first element from the collection that is given as input.
+When we read the method signature it tells us that the method takes a `Collection<T>` as input and it returns a
+value of type `T`. But what happens when the given collection is empty? The method signature only tells us what
+happens in the "happy path". In most cases developers choose to simply return `null` when there is no value that
+can be returned. Returning `null` is an example of an implicit effect that isn't represented in our type signature.
+To make this nullable effect explicit we can change the method signature as follows:
+
+[source,java]
+----
+public <T> Optional<T> getFirst(Collection<T> collection)
+----
+
+Notice that the return type now explicitly states that the method will "optionally" return a value of type `T`.
+An `Optional` can be either an instance of `Present` (which contains a value) or an instance of `Empty`
+(which contains no value).
+
+[source,java]
+----
+public abstract class Optional<T> { ... }
+final class Present<T> extends Optional<T> { ... }
+final class Empty<T> extends Optional<T> { ... }
+----
+
+Let's look at an example of how we can use this type to refactor code that handles nullable values.
+
+[source,java]
+----
+Person person = personCache.find(name);
+if (person != null) {
+    Address address = person.getAddress();
+    if (address != null) {
+        City city = address.getCity();
+        if (city != null) {
+            process(city);
+        }
+    }
+}
+----
+
+The above example shows how multiple levels of `null` checks need to be nested in order to account for all the possible
+null values that might occur at runtime. If we change the return types to utilize `Optional<T>` to make the nullable
+effect explicit we might naively rewrite the above example to the following:
+
+[source,java]
+----
+Optional<Person> person = personCache.find(name);
+if (person.isPresent()) {
+    Optional<Address> address = person.get().getAddress();
+    if (address.isPresent()) {
+        Optional<City> city = address.get().getCity();
+        if (city.isPresent()) {
+            process(city.get());
+        }
+    }
+}
+----
+
+The benefit of switching to `Optional` is that the calling side is now forced to perform the check, the nullable effect
+is no longer implicit. However we haven't gained much in terms of code style as the code still looks quite similar to
+the first version. This brings us to the next great benefit of using an explicit type to encode side-effects:
+*composability*!
+Since `Optional` is just an ordinary type it comes with many convenience methods that allow us to abstract away many
+common patterns that we encounter when dealing with nullable values. These methods are composable in that they allow
+us to "wire" together multiple nullable values and actions without leaving the typesafe `Optional` context.
+To illustrate this, the proper way to rewrite the above example is as follows:
+
+[source,java]
+----
+personCache.find(name)
+           .flatMap(Person::getAddress)
+           .flatMap(Address::getCity)
+           .ifPresent(this::process);
+----
+
+Firstly notice that Optional allows for a functional style (i.e. expression-based rather than imperative
+statement-based). This is of course a matter of taste and not enforced, you're still free to split up the expression
+into multiple statements if that's your preference. Another interesting fact to notice is that by using the
+compositional methods `flatMap` and `ifPresent` the code becomes much more verbose and easily readable (granted, it
+might take some time to get used to this functional expression-based style). Even more interestingly, our code is now
+completely safe from null pointers (and hence from `NullPointerExceptions`) but we haven't written a single null check
+ourselves! The methods defined on `Optional` abstract the details of null handling away from us in a type-safe
+container. All we need to do is compose the appropriate actions together within the `Optional` context.
+
+*Pro tip*: _Make maximum use of the composable methods and avoid calling `Optional.get()` as much as possible!_
+
+
+## Why a custom Optional?!
+
+By now you might be thinking: the JDK already comes with the `java.util.Optional` implementation, why did we decide to
+implement our own custom version?
+The answer is simply because `java.util.Optional` isn't composable enough. Especially in cases where you want to
+specify actions to take when no value is present, i.e. in the `Empty` optional case, `java.util.Optional` doesn't
+help us out and forces us to write imperative manual checks again. For example, we want to eliminate the need for code
+like the following:
+
+[source,java]
+----
+Optional<Foo> opt = getSomeOptional();
+if (opt.isSuccess()) {
+    doSomething(opt.get());
+} else {
+    doSomethingElse();
+}
+----
+
+In favor of:
+
+[source,java]
+----
+getSomeOptional()
+    .ifPresent(this::doSomething)
+    .ifEmpty(this::doSomethingElse);
+----
+
+There are many other reasons that we considered but composability is by far the most important one.
+
+### An overview of the differences between our Optional and java.util.Optional:
+
+* `ifPresent` returns `Optional` instead of `void` so that expressions don't have to be broken up in order to do side-effects (i.e. perform actions)
+* added `isEmpty()`
+* added `ifEmpty(Runnable runnable)`, for performing side-effects in the empty case (also returns `Optional`).
+* `flatMap` returns `empty` if `mapper` function returns `null` instead of throwing `NullPointerException`.
+* added `orElseMap(Supplier<? extends T> mapper)`, to allow mapping a value in the empty case (like `Try.recover`).
+* added `orElseFlatMap(Supplier<? extends Optional<? extends T>> mapper)`, to allow flatMapping in the empty case (like `Try.recoverWith`).
+* added `stream()`, to convert to a Stream that contains 0 or 1 elements, mainly for easier composition with Stream API.
+* added `toTry` to convert to `Success` if a value is present, otherwise `Failure` with `NoSuchElementException`.
+
+*Note*: _This implementation is backwards compatible with `java.util.Optional` in order to facilitate easy adoption._
+
+
+## Try<T>
+
+Whereas `Optional<T>` helps us to deal with nullable values, the `Try<T>` type helps us to deal with computations/actions
+that can potentially fail. Our aim is again to provide a type that makes this effect explicit and allows compositional
+methods that abstract common patterns away from the user.
+
+`Try` is very similar to `Optional` in that an instance of `Try` can either be a `Success` or a `Failure`. If it's
+a `Success` then it contains the value of type `T`, if it's a `Failure` then it contains a `Throwable` to identify
+the cause of the failure.
+
+[source,java]
+----
+public abstract class Try<T> { ... }
+final class Success<T> extends Try<T> { ... }
+final class Failure<T> extends Try<T> { ... }
+----
+
+Now you might be thinking: Why do I need the `Try` type? I can already make the failure effect explicit in my type
+signatures with `throws` clauses. Strictly speaking that is true, but unfortunately checked exceptions are a special
+construct in the Java language rather than a first-class citizen like ordinary types. This basically means that
+the only thing we can do with a method signature that specifies a `throws` clause is to wrap it in a `try/catch` block
+or re-throw it for the next caller to figure out what to do. This isn't the compositional way of dealing with failures
+that we're looking for. Having an ordinary type that represent failable computations/actions allows us to specify
+methods that abstract away common patterns of failure handling while providing a composable interface.
+
+Let's look at how we can use the `Try` type to make failure handling more convenient and maintainable.
+
+[source,java]
+----
+User user = null;
+try {
+    user = getUserFromCache(userId);
+} catch (NoSuchElementException nee) {
+    try {
+        user = getUserFromDatabase(userId);
+    } catch (IOException ioe) {
+        try {
+            user = createUser(new User());
+        } catch (IOException e) {
+            // now what? log? fail?
+        }
+    }
+} finally {
+    try {
+        update(user);
+    } catch (Exception e) {
+        // now what? log? fail?
+    }
+}
+----
+
+In the above example we first want to try to get a user from some cache, if that fails we will try the database, and
+if that fails as well we will fall back to a dummy/default user instance. Finally we want to run some `update` logic on
+the user instance. This example (although a bit paranoid) shows how we compose failable actions when using the
+`throws` mechanism of the Java language. We end up with nested `try/catch` blocks and still we often hit cases where we
+don't really know how to handle the failing situation at this point so we're forced to either hide that situation or
+propagate the error to the caller via another `throws` clause. The example also demonstrates that this style of
+programming prevents us from focusing on "the essence" of what we're trying to do because of all the boilerplate
+involved with failure handling.
+
+When we adopt the `Try` type we can refactor the example above to the following:
+
+[source,java]
+----
+Try.ofFailable(() -> getUserFromCache(userId))
+   .recover(e -> getUserFromDatabase(userId))
+   .recover(e -> createUser(new User()))
+   .map(user -> update(user));
+----
+
+Again we notice that all the boilerplate is gone and the actual details of failure handling are abstracted away, we
+simply use the error handling methods that `Try` provides. Notice that in this refactoring we don't even have to
+change the method signatures of the methods involved. We simply wrap the initial call in a `Try` via `Try.ofFailable()`.
+Of course it's cleaner to refactor our existing method signatures to return a `Try`, but since that's not always a
+possibility we can also refactor in a slightly less intrusive way.
+
+Notice also that we have achieved a situation in which we have added failure handling in a type-safe way to our
+code, without actually doing any explicit failure handling ourselves. The code is a lot more readable from the
+perspective that we only express "the essence" of what we're trying to accomplish and leave out all the boilerplate
+that's involved in failure handling.
+
+
+## LazyTry<T>
+
+There are certain situations in which we would like to compose a chain of computations/actions without directly
+executing them. Although `Try` allows us to perform the composition, due to it's eager nature a `Try`-based expression
+will be executed directly. To allow for the composition in a lazy manner the `LazyTry` type is supplied.
+Using `LazyTry` we are able to compose actions however we like, without actually executing them. Later on, when it's
+actually required we can trigger the execution by calling `LazyTry.run()`. This will execute the whole chain of
+actions and return the result in the form of a `Try<T>`. Essentially the `LazyTry` is a simple wrapper for the `Try`
+type which defers the actual execution until a later point.
+
+Let's look at an example of how `LazyTry` can used:
+
+[source,java]
+----
+public LazyTry<Application> saveOrUpdate(final Application app) {
+    return tagService.createTags(app.getTags())
+                     .flatMap(() -> policyService.createPolicies(app.getPolicies()).run())
+                     .flatMap(() -> catalogService.createCatalogs(app.getCatalogs()).run())
+                     .flatMap(() -> ownerService.createOwners(evaluateOwners(app)).run())
+                     .map(() -> dataService.saveOrUpdate(app));
+}
+----
+
+The above example composes several database interactions in the context of a `LazyTry`. This essentially makes the
+`saveOrUpdate` method lazy in that invoking `saveOrUpdate` doesn't actually do anything other than prepare some
+composition of actions to be executed at some later point in time:
+
+[source,java]
+----
+LazyTry<Application> saveAction = saveOrUpdate(app);
+
+...
+
+saveAction.run();
+----
+
+This allows us to do interesting things, for example suppose that we want to perform some dynamic behaviour to perform
+this action in the context of some transaction (so that a failure at any point in the chain rolls back all other
+actions as well). We can implement that in a single class that takes a `LazyTry`, executes it in the context of the
+transaction, and returns the result as a `Try`.
+
+[source,java]
+----
+LazyTry<Application> saveAction = saveOrUpdate(app);
+
+...
+
+saveAction.apply(lazyTryTransaction::run);
+----
+
+Lazy evaluation/execution allows us to abstract away even more patterns that were much more difficult in the past.
