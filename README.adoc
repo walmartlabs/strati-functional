@@ -237,7 +237,7 @@ that's involved in failure handling.
 ## LazyTry<T>
 
 There are certain situations in which we would like to compose a chain of computations/actions without directly
-executing them. Although `Try` allows us to perform the composition, due to it's eager nature a `Try`-based expression
+executing them. Although `Try` allows us to perform the composition, due to its eager nature a `Try`-based expression
 will be executed directly. To allow for the composition in a lazy manner the `LazyTry` type is supplied.
 Using `LazyTry` we are able to compose actions however we like, without actually executing them. Later on, when it's
 actually required we can trigger the execution by calling `LazyTry.run()`. This will execute the whole chain of
