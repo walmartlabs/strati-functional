@@ -16,7 +16,16 @@
 
 package io.strati.functional.exception;
 
+/**
+ * This class acts as a wrapper around checked exceptions
+ * utilized by the Try and LazyTry classes to create a unified user experiences
+ * while using the APIs.
+ */
 public class WrappedCheckedException extends RuntimeException {
+  /**
+   * Default constuctor ensures the cause is captured correctly.
+   * @param cause the throwable exception to be wrapped.
+   */
   public WrappedCheckedException(final Throwable cause) {
     super(cause);
   }

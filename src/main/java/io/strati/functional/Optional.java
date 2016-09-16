@@ -273,6 +273,13 @@ public abstract class Optional<T> {
 
 }
 
+/**
+ * The Present class is used to create an object bound, not null value holder.
+ * Used to guarantee the presence of a value. But should not be used to validate
+ * the state or internal representation of the value.
+ *
+ * @param <T>
+ */
 final class Present<T> extends Optional<T> {
   private final T value;
 
