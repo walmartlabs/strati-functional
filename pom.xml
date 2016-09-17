@@ -28,6 +28,7 @@
 
   <properties>
     <version.java>1.8</version.java>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!-- PGP Info for signing -->
     <gpg.executable>gpg</gpg.executable>
@@ -207,9 +208,6 @@
             <version>2.19.1</version>
           </dependency>
         </dependencies>
-        <configuration>
-          <excludedGroups>io.strati.test.PerformanceTest</excludedGroups>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -252,6 +250,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
+        <version>3.5.1</version>
         <dependencies>
           <dependency>
             <groupId>org.asciidoctor</groupId>
