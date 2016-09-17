@@ -42,3 +42,5 @@ test-output/
 
 rebel.xml
 dependency-reduced-pom.xml
+
+local.*
