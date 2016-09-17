@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.strati</groupId>
@@ -23,27 +24,19 @@
   <packaging>jar</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Provides a set of lightweight functional classes to complement core Java.</description>
+  <description>Provides a set of lightweight functional classes to complement core Java.
+  </description>
   <url>https://github.com/strati/strati-functional</url>
 
   <properties>
     <version.java>1.8</version.java>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-    <!-- PGP Info for signing -->
-    <gpg.executable>gpg</gpg.executable>
-    <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
-    <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
-    <gpg.defaultKeyring>false</gpg.defaultKeyring>
-    <gpg.publicKeyring>${env.GPG_DIR}/pubring.gpg</gpg.publicKeyring>
-    <gpg.secretKeyring>${env.GPG_DIR}/secring.gpg</gpg.secretKeyring>
-
-
     <!-- Code Quality -->
     <version.jacoco>0.7.4.201502262128</version.jacoco>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <sonar.jacoco.reportPath>${project.build.directory}/coverage-reports/jacoco.exec</sonar.jacoco.reportPath>
+    <sonar.jacoco.reportPath>${project.build.directory}/coverage-reports/jacoco.exec
+    </sonar.jacoco.reportPath>
     <sonar.jacoco.reportOutput>${project.reporting.outputDirectory}/jacoco</sonar.jacoco.reportOutput>
   </properties>
 
@@ -92,101 +85,6 @@
         <artifactId>apache-rat-plugin</artifactId>
         <version>0.11</version>
       </plugin>
-      <!--
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>${version.jacoco}</version>
-        <executions>
-          <execution>
-            <id>agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <excludes>
-                <exclude>test/**</exclude>
-              </excludes>
-              <destFile>${sonar.jacoco.reportPath}</destFile>
-            </configuration>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>package</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <configuration>
-              <dataFile>${sonar.jacoco.reportPath}</dataFile>
-              <outputDirectory>${sonar.jacoco.reportOutput}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>check</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <dataFile>${sonar.jacoco.reportPath}</dataFile>
-              <haltOnFailure>false</haltOnFailure>
-              <rules>
-                <rule>
-                  <element>CLASS</element>
-                  <excludes>
-                    <exclude>**/package-info.class</exclude>
-                    <exclude>**/*Test.class</exclude>
-                  </excludes>
-                  <limits>
-                    <limit>
-                      <counter>BRANCH</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                    <limit>
-                      <counter>LINE</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-                <rule>
-                  <element>BUNDLE</element>
-                  <excludes>
-                    <exclude>**/package-info.class</exclude>
-                    <exclude>**/*Test.class</exclude>
-                  </excludes>
-                  <limits>
-                    <limit>
-                      <counter>BRANCH</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                    <limit>
-                      <counter>LINE</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-                <rule>
-                  <element>PACKAGE</element>
-                  <excludes>
-                    <exclude>**/package-info.class</exclude>
-                    <exclude>**/*Test.class</exclude>
-                  </excludes>
-                  <limits>
-                    <limit>
-                      <counter>BRANCH</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                    <limit>
-                      <counter>LINE</counter>
-                      <minimum>0.70</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
@@ -221,31 +119,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.7</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -351,4 +224,54 @@
       <timezone>-7</timezone>
     </contributor>
   </contributors>
+
+  <profiles>
+    <profile>
+      <id>ossrh</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <!-- PGP Info for signing -->
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
+        <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
+        <gpg.defaultKeyring>false</gpg.defaultKeyring>
+        <gpg.publicKeyring>${env.GPG_DIR}/pubring.gpg</gpg.publicKeyring>
+        <gpg.secretKeyring>${env.GPG_DIR}/secring.gpg</gpg.secretKeyring>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.2</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
