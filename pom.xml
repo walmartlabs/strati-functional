@@ -18,7 +18,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.strati</groupId>
   <artifactId>strati-functional</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -214,7 +214,7 @@
     <url>https://github.com/strati/strati-functional</url>
     <connection>scm:git:https://github.com/strati/strati-functional.git</connection>
     <developerConnection>scm:git:git@github.com:strati/strati-functional.git</developerConnection>
-    <tag>strati-functional-0.1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
