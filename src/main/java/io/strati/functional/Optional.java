@@ -24,6 +24,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ *
+ *
  * A container object which may or may not contain a non-null value.
  * Instances of {@code Optional} are either {@code Present} or {@code Empty}.
  * This is an extended implementation of {@code java.util.Optional} that allows

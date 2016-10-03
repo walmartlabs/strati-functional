@@ -26,6 +26,11 @@ import static io.strati.functional.Try.success;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ */
+
 public class LazyTryTest {
 
   @Test

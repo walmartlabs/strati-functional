@@ -17,6 +17,10 @@
 package io.strati.functional.exception;
 
 /**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ *
+ *
  * This class acts as a wrapper around checked exceptions
  * utilized by the Try and LazyTry classes to create a unified user experiences
  * while using the APIs.

@@ -28,6 +28,11 @@ import static io.strati.functional.Try.*;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
+/**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ */
+
 public class TryTest {
 
   @Test
