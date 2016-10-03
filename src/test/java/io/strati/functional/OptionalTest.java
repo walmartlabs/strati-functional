@@ -25,6 +25,11 @@ import java.util.function.Function;
 import static io.strati.functional.Optional.*;
 import static org.junit.Assert.*;
 
+/**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ */
+
 public class OptionalTest {
 
   @Test

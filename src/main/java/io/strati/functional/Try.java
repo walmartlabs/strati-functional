@@ -35,9 +35,8 @@ import java.util.stream.Stream;
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
- */
-
-/**
+ *
+ *
  * Implementation of the Try error-handling abstraction, based on the implementation in the Scala Standard Library
  * which in turn is based on Twitter's original implementation in com.twitter.util.
  * <p>

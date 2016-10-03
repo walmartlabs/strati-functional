@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package io.strati.functional.function;
+package io.strati.functional.resilience;
 
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
- *
- *
- * Copy of {@link java.util.function.Predicate Predicate} with added `throws` clause to allow
- * implicit handling of checked Exceptions in lambda's.
  */
-@FunctionalInterface
-public interface TryPredicate<T> {
-  boolean test(T t) throws Exception;
+class CircuitBreakerClosedState extends CircuitBreakerState {
+
+  protected CircuitBreakerClosedState(final CircuitBreaker circuitBreaker) {
+    super(circuitBreaker);
+    circuitBreaker.resetFailureCount();
+  }
+
+  @Override
+  protected void actUponException(final Throwable t) {
+    super.actUponException(t);
+    if (circuitBreaker.isThresholdReached()) {
+      circuitBreaker.moveToOpenState();
+    }
+  }
 }

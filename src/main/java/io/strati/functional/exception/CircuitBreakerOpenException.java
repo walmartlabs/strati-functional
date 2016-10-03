@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package io.strati.functional.function;
+package io.strati.functional.exception;
 
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
- *
- *
- * Copy of {@link java.util.function.Predicate Predicate} with added `throws` clause to allow
- * implicit handling of checked Exceptions in lambda's.
  */
-@FunctionalInterface
-public interface TryPredicate<T> {
-  boolean test(T t) throws Exception;
+
+public class CircuitBreakerOpenException extends RuntimeException {
+  public CircuitBreakerOpenException(final String msg, final Throwable cause) {
+    super(msg, cause);
+  }
 }
