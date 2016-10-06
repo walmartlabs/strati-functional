@@ -18,6 +18,7 @@ package io.strati.functional.resilience;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * @author WalmartLabs
@@ -32,9 +33,9 @@ public class CircuitBreakerBuilder {
   private int threshold;
   private long timeout;
 
-  private Runnable toClosedStateListener;
-  private Runnable toHalfOpenStateListener;
-  private Runnable toOpenStateListener;
+  private Consumer<CircuitBreaker> toClosedStateListener;
+  private Consumer<CircuitBreaker> toHalfOpenStateListener;
+  private Consumer<CircuitBreaker> toOpenStateListener;
 
   public static CircuitBreakerBuilder create() {
     return new CircuitBreakerBuilder();
@@ -67,21 +68,37 @@ public class CircuitBreakerBuilder {
   }
 
   public CircuitBreakerBuilder toClosedStateListener(final Runnable listener) {
+    return toClosedStateListener(c -> listener.run());
+  }
+
+  public CircuitBreakerBuilder toClosedStateListener(final Consumer<CircuitBreaker> listener) {
     this.toClosedStateListener = listener;
     return this;
   }
 
   public CircuitBreakerBuilder toHalfOpenStateListener(final Runnable listener) {
+    return toHalfOpenStateListener(c -> listener.run());
+  }
+
+  public CircuitBreakerBuilder toHalfOpenStateListener(final Consumer<CircuitBreaker> listener) {
     this.toHalfOpenStateListener = listener;
     return this;
   }
 
   public CircuitBreakerBuilder toOpenStateListener(final Runnable listener) {
+    return toOpenStateListener(c -> listener.run());
+  }
+
+  public CircuitBreakerBuilder toOpenStateListener(final Consumer<CircuitBreaker> listener) {
     this.toOpenStateListener = listener;
     return this;
   }
 
   public CircuitBreakerBuilder stateChangeListener(final Runnable listener) {
+    return stateChangeListener(c -> listener.run());
+  }
+
+  public CircuitBreakerBuilder stateChangeListener(final Consumer<CircuitBreaker> listener) {
     this.toClosedStateListener = listener;
     this.toHalfOpenStateListener = listener;
     this.toOpenStateListener = listener;
@@ -98,20 +115,14 @@ public class CircuitBreakerBuilder {
     if (timeout < 1) {
       timeout = DEFAULT_TIMEOUT;
     }
+    return new CircuitBreaker(name, threshold, timeout,
+        getOrCreateListener(toClosedStateListener),
+        getOrCreateListener(toHalfOpenStateListener),
+        getOrCreateListener(toOpenStateListener));
+  }
 
-    final CircuitBreaker cb = new CircuitBreaker(name, threshold, timeout);
-
-    if (toClosedStateListener != null) {
-      cb.setToClosedStateListener(toClosedStateListener);
-    }
-    if (toHalfOpenStateListener != null) {
-      cb.setToHalfOpenStateListener(toHalfOpenStateListener);
-    }
-    if (toOpenStateListener != null) {
-      cb.setToOpenStateListener(toOpenStateListener);
-    }
-
-    return cb;
+  private static Consumer<CircuitBreaker> getOrCreateListener(final Consumer<CircuitBreaker> listener) {
+    return listener != null ? listener : cb -> {};
   }
 
 }

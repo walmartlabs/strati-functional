@@ -28,25 +28,25 @@ public class CircuitBreakerTest {
         .timeout(2000)
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Void> result1 = cb.attempt(() -> System.out.println(3 / 0));
     assertFailure(ArithmeticException.class, result1);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Void> result2 = cb.attempt(() -> System.out.println(3 / 0));
     assertFailure(ArithmeticException.class, result2);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen());
+    assertTrue("CB should be half-open", cb.isHalfOpen());
 
     Try<Void> result3 = cb.attempt(() -> System.out.println("foo"));
     assertTrue("call should have succeeded", result3.isSuccess());
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
   }
 
   @Test
@@ -56,25 +56,25 @@ public class CircuitBreakerTest {
         .timeout(Duration.ofMillis(2000))
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Void> result1 = cb.attempt(() -> System.out.println(3 / 0));
     assertFailure(ArithmeticException.class, result1);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Void> result2 = cb.attempt(() -> System.out.println(3 / 0));
     assertFailure(ArithmeticException.class, result2);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen());
+    assertTrue("CB should be half-open", cb.isHalfOpen());
 
     Try<Void> result3 = cb.attempt(() -> System.out.println(3 / 0));
     assertFailure(ArithmeticException.class, result3);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
   }
 
   @Test
@@ -84,7 +84,7 @@ public class CircuitBreakerTest {
         .timeout(Duration.ofMillis(2000))
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
     IntStream.range(0, 100)
         .forEach(i -> {
           cb.attempt(() -> {});
@@ -99,7 +99,7 @@ public class CircuitBreakerTest {
         .timeout(Duration.ofMillis(1337))
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
     IntStream.range(0, 100)
         .forEach(i -> {
           Try<Void> result = cb.attempt(() -> System.out.println(3 / 0));
@@ -115,26 +115,26 @@ public class CircuitBreakerTest {
         .timeout(2000)
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Integer> result1 = cb.attempt(() -> 3/0);
     assertFailure(ArithmeticException.class, result1);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Integer> result2 = cb.attempt(() -> 3 / 0);
     assertFailure(ArithmeticException.class, result2);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen());
+    assertTrue("CB should be half-open", cb.isHalfOpen());
 
     Try<Integer> result3 = cb.attempt(() -> 3/1);
     assertTrue("call should have succeeded", result3.isSuccess());
     assertTrue("result should be 3", 3 == result3.get());
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
   }
 
   @Test
@@ -144,25 +144,25 @@ public class CircuitBreakerTest {
         .timeout(Duration.ofMillis(2000))
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Integer> result1 = cb.attempt(() -> 3 / 0);
     assertFailure(ArithmeticException.class, result1);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Integer> result2 = cb.attempt(() -> 3 / 0);
     assertFailure(ArithmeticException.class, result2);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen());
+    assertTrue("CB should be half-open", cb.isHalfOpen());
 
     Try<Integer> result3 = cb.attempt(() -> 3 / 0);
     assertFailure(ArithmeticException.class, result3);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
   }
 
   @Test
@@ -188,12 +188,12 @@ public class CircuitBreakerTest {
     AtomicBoolean flag = new AtomicBoolean(false);
     cb.attempt(() -> 3 / 0);
     cb.attempt(() -> 3 / 0);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
     assertFalse("flag should've been set to false", flag.get());
 
     cb.attempt(() -> 3 / 0).ifFailure(e -> flag.set(true));
 
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
     assertTrue("flag should've been set to true", flag.get());
   }
 
@@ -206,13 +206,13 @@ public class CircuitBreakerTest {
     AtomicBoolean flag = new AtomicBoolean(false);
     cb.attempt(() -> 3 / 0);
     cb.attempt(() -> 3 / 0);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
     Thread.sleep(2000);
     assertTrue(cb.isHalfOpen());
     assertFalse("flag should've been set to false", flag.get());
 
     cb.attempt(() -> 3 / 0).ifFailure(e -> flag.set(true));
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
     assertTrue("flag should've been set to true", flag.get());
   }
 
@@ -222,7 +222,8 @@ public class CircuitBreakerTest {
     int threshold = 13;
     long timeout = 1337;
 
-    CircuitBreaker cb1 = CircuitBreakerBuilder.create(name)
+    CircuitBreaker cb1 = CircuitBreakerBuilder.create()
+        .name(name)
         .threshold(threshold)
         .timeout(timeout)
         .build();
@@ -250,12 +251,12 @@ public class CircuitBreakerTest {
         .timeout(2000)
         .build();
 
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     Try<Integer> result1 = cb.attempt(() -> 3 / 0);
 
     assertFailure(ArithmeticException.class, result1);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     Try<Integer> result2 = cb.attempt(() -> 3 / 0);
     assertFailure(CircuitBreakerOpenException.class, result2);
@@ -271,7 +272,7 @@ public class CircuitBreakerTest {
 
   @Test
   public void testCB_StateChangeListener() throws InterruptedException {
-    AtomicInteger count = new AtomicInteger(0);
+    AtomicInteger count = new AtomicInteger(-1);
     CircuitBreaker cb = CircuitBreakerBuilder.create()
         .threshold(1)
         .timeout(1000)
@@ -279,17 +280,17 @@ public class CircuitBreakerTest {
         .build();
 
     cb.attempt(() -> 3 / 0);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     assertEquals("count should be 1", 1, count.get());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen()); // this check triggers state change
+    assertTrue("CB should be half-open", cb.isHalfOpen()); // this check triggers state change
 
     assertEquals("count should be 2", 2, count.get());
 
     cb.attempt(() -> 3);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
     assertEquals("count should be 3", 3, count.get());
   }
@@ -309,19 +310,19 @@ public class CircuitBreakerTest {
         .build();
 
     cb.attempt(() -> 3 / 0);
-    assertTrue(cb.isOpen());
+    assertTrue("CB should be open", cb.isOpen());
 
     assertEquals("count should be 1", 1, countToOpen.get());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen()); // this check triggers state change
+    assertTrue("CB should be half-open", cb.isHalfOpen()); // this check triggers state change
 
     assertEquals("count should be 1", 1, countToHalfOpen.get());
 
     cb.attempt(() -> 3);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
-    assertEquals("count should be 1", 1, countToClosed.get());
+    assertEquals("count should be 2", 2, countToClosed.get());
 
     cb.attempt(() -> 3 / 0);
     assertTrue(cb.isOpen());
@@ -329,14 +330,28 @@ public class CircuitBreakerTest {
     assertEquals("count should be 2", 2, countToOpen.get());
 
     Thread.sleep(1000);
-    assertTrue(cb.isHalfOpen()); // this check triggers state change
+    assertTrue("CB should be half-open", cb.isHalfOpen()); // this check triggers state change
 
     assertEquals("count should be 2", 2, countToHalfOpen.get());
 
     cb.attempt(() -> 3);
-    assertTrue(cb.isClosed());
+    assertTrue("CB should be closed", cb.isClosed());
 
-    assertEquals("count should be 2", 2, countToClosed.get());
+    assertEquals("count should be 3", 3, countToClosed.get());
+  }
+
+  @Test
+  public void test_OpenCloseManually() {
+    CircuitBreaker cb = CircuitBreakerBuilder.create()
+        .threshold(1)
+        .timeout(1000)
+        .build();
+
+    assertTrue("CB should be closed", cb.isClosed());
+    cb.open();
+    assertTrue("CB should be open", cb.isOpen());
+    cb.close();
+    assertTrue("CB should be closed", cb.isClosed());
   }
 
   private static <T> void assertFailure(Class<? extends Throwable> ex, Try<T> value) {

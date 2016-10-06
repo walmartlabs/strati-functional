@@ -23,31 +23,41 @@ import io.strati.functional.exception.CircuitBreakerOpenException;
 import io.strati.functional.function.TryRunnable;
 import io.strati.functional.function.TrySupplier;
 
+import java.util.function.Consumer;
+
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
  *
  * Implementation of the Circuit Breaker pattern, proposed by Michael T. Nygard in his book "Release It!".
- * Ported and extended version of the C# implementation proposed by Patrick Desjardins
- * (https://github.com/MrDesjardins/DotNetCircuitBreaker).
+ *
  */
 public class CircuitBreaker {
+
+  private enum State {
+    CLOSED, HALF_OPEN, OPEN
+  }
 
   private String name;
 
   private final Object monitor = new Object();
-  private CircuitBreakerState state;
+
+  private State state;
 
   private int failures = 0;
   private final int threshold;
   private final long timeout;
   private Throwable lastObservedFailure;
+  private long openTime;
 
-  private Runnable toClosedStateListener = () -> {};
-  private Runnable toHalfOpenStateListener = () -> {};
-  private Runnable toOpenStateListener = () -> {};
+  private Consumer<CircuitBreaker> toClosedStateListener;
+  private Consumer<CircuitBreaker> toHalfOpenStateListener;
+  private Consumer<CircuitBreaker> toOpenStateListener;
 
-  protected CircuitBreaker(final String name, final int threshold, final long timeout) {
+  CircuitBreaker(final String name, final int threshold, final long timeout,
+                 final Consumer<CircuitBreaker> toClosedStateListener,
+                 final Consumer<CircuitBreaker> toHalfOpenStateListener,
+                 final Consumer<CircuitBreaker> toOpenStateListener) {
     if (threshold < 1) {
       throw new IllegalArgumentException("Failure threshold should be greater than 0");
     }
@@ -57,6 +67,9 @@ public class CircuitBreaker {
     this.name = name;
     this.threshold = threshold;
     this.timeout = timeout;
+    this.toClosedStateListener = toClosedStateListener;
+    this.toHalfOpenStateListener = toHalfOpenStateListener;
+    this.toOpenStateListener = toOpenStateListener;
     moveToClosedState();
   }
 
@@ -70,8 +83,8 @@ public class CircuitBreaker {
 
   public <T> Try<T> attempt(final LazyTry<T> protectedCode) {
     synchronized (monitor) {
-      state.protectedCodeAboutToBeCalled();
-      if (CircuitBreakerOpenState.class.isInstance(state)) {
+      update();
+      if (State.OPEN.equals(state)) {
         return Try.failure(new CircuitBreakerOpenException("Circuit breaker open, attempt aborted", lastObservedFailure));
       }
     }
@@ -85,16 +98,27 @@ public class CircuitBreaker {
     } catch (Throwable t) {
       lastObservedFailure = t;
       synchronized (monitor) {
-        state.actUponException(t);
+        failures++;
+        if ((State.CLOSED.equals(state) && isThresholdReached()) || State.HALF_OPEN.equals(state)) {
+          moveToOpenState();
+        }
       }
       return Try.failure(t);
     }
 
     synchronized (monitor) {
-      state.protectedCodeHasBeenCalled();
+      if (State.HALF_OPEN.equals(state)) {
+        moveToClosedState();
+      }
     }
 
     return Try.success(result);
+  }
+
+  private void update() {
+    if (State.OPEN.equals(state) && System.currentTimeMillis() >= openTime + getTimeout()) {
+      moveToHalfOpenState();
+    }
   }
 
   public void close() {
@@ -109,42 +133,36 @@ public class CircuitBreaker {
     }
   }
 
-  CircuitBreakerState moveToClosedState() {
-    toClosedStateListener.run();
-    state = new CircuitBreakerClosedState(this);
-    return state;
-  }
-
-  CircuitBreakerState moveToHalfOpenState() {
-    toHalfOpenStateListener.run();
-    state = new CircuitBreakerHalfOpenState(this);
-    return state;
-  }
-
-  CircuitBreakerState moveToOpenState() {
-    toOpenStateListener.run();
-    state = new CircuitBreakerOpenState(this);
-    return state;
-  }
-
-  void increaseFailureCount() {
-    failures++;
-  }
-
-  void resetFailureCount() {
+  private void moveToClosedState() {
+    toClosedStateListener.accept(this);
+    state = State.CLOSED;
     failures = 0;
   }
 
+  private void moveToHalfOpenState() {
+    toHalfOpenStateListener.accept(this);
+    state = State.HALF_OPEN;
+  }
+
+  private void moveToOpenState() {
+    toOpenStateListener.accept(this);
+    state = State.OPEN;
+    openTime = System.currentTimeMillis();
+  }
+
   public boolean isClosed() {
-    return CircuitBreakerClosedState.class.isInstance(state.update());
+    update();
+    return State.CLOSED.equals(state);
   }
 
   public boolean isHalfOpen() {
-    return CircuitBreakerHalfOpenState.class.isInstance(state.update());
+    update();
+    return State.HALF_OPEN.equals(state);
   }
 
   public boolean isOpen() {
-    return CircuitBreakerOpenState.class.isInstance(state.update());
+    update();
+    return State.OPEN.equals(state);
   }
 
   public boolean isThresholdReached() {
@@ -165,18 +183,6 @@ public class CircuitBreaker {
 
   public int getThreshold() {
     return threshold;
-  }
-
-  public void setToClosedStateListener(final Runnable toClosedStateListener) {
-    this.toClosedStateListener = toClosedStateListener;
-  }
-
-  public void setToHalfOpenStateListener(final Runnable toHalfOpenStateListener) {
-    this.toHalfOpenStateListener = toHalfOpenStateListener;
-  }
-
-  public void setToOpenStateListener(final Runnable toOpenStateListener) {
-    this.toOpenStateListener = toOpenStateListener;
   }
 
 }
