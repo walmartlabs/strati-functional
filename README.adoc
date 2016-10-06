@@ -10,6 +10,7 @@ to communicate side-effects via highly compositional types. The library currentl
 <1> *Optional* - container for handling nullable values (composable alternative to `java.util.Optional`)
 <2> *Try* - container for handling failures (based on `scala.util.Try`)
 <3> *LazyTry* - compose failable actions in a lazy manner (i.e. defer execution)
+<4> *CircuitBreaker* - improve stability and resilience by preventing your system from repeatedly trying to execute an operation that is likely to fail
 
 These types can be used to make (commonly implicit) effects explicit in the type signatures of your code.
 This allows much more safety and readability since the types tell a larger part of the story as to what happens when
@@ -287,3 +288,27 @@ saveAction.apply(lazyTryTransaction::run);
 ----
 
 Lazy evaluation/execution allows us to abstract away even more patterns that were much more difficult in the past.
+
+
+## CircuitBreaker
+
+Implementation of the circuit breaker pattern, proposed by Michael T. Nygard. This pattern is used to improve stability and resilience of an application. More specifically it's used to prevent your application from repeatedly trying to execute operations that are likely to fail. The basic idea is to protect a failable action by wrapping it in a circuit breaker instance which monitors for failures. Once a given failure threshold is reached the circuit breaker will "open" (i.e. trip) so that subsequent calls will be blocked until a given amount of time has passed. The implementation and pattern are best described by the following state diagram:
+
+image:https://github.com/strati/strati-functional/raw/master/CB-states.png["Circuit Breaker state diagram"]
+
+The circuit breaker has three states: CLOSED, HALF_OPEN and OPEN. In the CLOSED state the circuit breaker will allow all calls to the protected operation to go through normally while maintaining a failure count. Once the number of failures reaches a given threshold the circuit breaker will transition into the OPEN state. In this state all calls to the protected operation are blocked as they are likely to fail. Once a given amount of time has passed the circuit breaker goes into the HALF_OPEN state. The circuit breaker will allow a call to the protected operation to be made, on failure it will directly open the circuit again, on success it will directly go to the CLOSED state.
+
+Usage example:
+
+[source,java]
+----
+CircuitBreaker cb = CircuitBreakerBuilder.create()
+        .threshold(13)
+        .timeout(1337)
+        .stateChangeListener(() -> LOGGER.info(...))
+        .build();
+
+...
+
+cb.attempt(() -> someFailableOperation()).recover(e -> someFallbackOperation());
+----
