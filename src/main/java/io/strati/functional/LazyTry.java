@@ -23,9 +23,8 @@ import java.util.function.Function;
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
- */
-
-/**
+ *
+ *
  * This is a lazy version of {@code io.strati.functional.Try} that supports lazy composition
  * of potentially failing operations. The same compositional operators that are available for
  * {@code Try} are also available for {@code LazyTry}. The key difference is that with

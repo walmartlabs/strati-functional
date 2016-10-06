@@ -17,6 +17,10 @@
 package io.strati.functional.function;
 
 /**
+ * @author WalmartLabs
+ * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
+ *
+ *
  * Copy of {@link Runnable Runnable} with added `throws` clause to allow
  * implicit handling of checked Exceptions in lambda's.
  */
