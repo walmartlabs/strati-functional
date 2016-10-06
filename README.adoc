@@ -1,5 +1,7 @@
 # Strati Functional
 
+image:https://travis-ci.org/strati/strati-functional.svg?branch=master["Build Status", link="https://travis-ci.org/strati/strati-functional"]
+
 ## Introduction
 Strati functional is a set of functional classes intended to make the Java development experience
 more intuitive and less cumbersome. One of the main purposes of this library is to allow types
