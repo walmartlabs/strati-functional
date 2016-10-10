@@ -34,30 +34,29 @@ import java.util.function.Consumer;
  */
 public class CircuitBreaker {
 
-  private enum State {
+  public enum State {
     CLOSED, HALF_OPEN, OPEN
   }
 
-  private String name;
+  private final String name;
+  private final int threshold;
+  private final long timeout;
+
+  private final Consumer<CircuitBreaker> toClosedStateListener;
+  private final Consumer<CircuitBreaker> toHalfOpenStateListener;
+  private final Consumer<CircuitBreaker> toOpenStateListener;
 
   private final Object monitor = new Object();
 
   private State state;
-
   private int failures = 0;
-  private final int threshold;
-  private final long timeout;
   private Throwable lastObservedFailure;
   private long openTime;
 
-  private Consumer<CircuitBreaker> toClosedStateListener;
-  private Consumer<CircuitBreaker> toHalfOpenStateListener;
-  private Consumer<CircuitBreaker> toOpenStateListener;
-
-  CircuitBreaker(final String name, final int threshold, final long timeout,
-                 final Consumer<CircuitBreaker> toClosedStateListener,
-                 final Consumer<CircuitBreaker> toHalfOpenStateListener,
-                 final Consumer<CircuitBreaker> toOpenStateListener) {
+  protected CircuitBreaker(final String name, final int threshold, final long timeout,
+                           final Consumer<CircuitBreaker> toClosedStateListener,
+                           final Consumer<CircuitBreaker> toHalfOpenStateListener,
+                           final Consumer<CircuitBreaker> toOpenStateListener) {
     if (threshold < 1) {
       throw new IllegalArgumentException("Failure threshold should be greater than 0");
     }
@@ -185,4 +184,7 @@ public class CircuitBreaker {
     return threshold;
   }
 
+  public State getState() {
+    return state;
+  }
 }
