@@ -180,7 +180,6 @@ public abstract class Optional<T> {
    *
    * @param <U>    The type parameter to the {@code Optional} returned by
    * @param mapper a mapping function to apply to the value, if present
-   *               the mapping function
    * @return the result of applying an {@code Optional}-bearing mapping
    * function to the value of this {@code Optional}, if a value is present,
    * otherwise an empty {@code Optional}
@@ -196,7 +195,7 @@ public abstract class Optional<T> {
    * <p>
    * Note: {@code orElseMap} is like {@code map} but for the empty case.
    *
-   * @param mapper
+   * @param mapper a mapping function to apply to the value, if present
    * @return an {@code Optional} describing the result of running a mapping
    * supplier, if a value is present and non-null, otherwise an
    * empty {@code Optional}

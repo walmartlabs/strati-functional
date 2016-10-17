@@ -60,7 +60,8 @@ public abstract class Try<T> {
   /**
    * Factory method to wrap values in a Success.
    *
-   * @param t the value to wrap
+   * @param t   the value to wrap
+   * @param <T> type of the payload
    * @return {@code Try<T>}
    */
   public static <T> Try<T> success(final T t) {
@@ -70,7 +71,8 @@ public abstract class Try<T> {
   /**
    * Factory method to wrap Throwable's in a Failure.
    *
-   * @param t the throwable to wrap
+   * @param t   the throwable to wrap
+   * @param <T> type of the payload
    * @return {@code Try<T>}
    */
   public static <T> Try<T> failure(final Throwable t) {
@@ -79,6 +81,11 @@ public abstract class Try<T> {
 
   /**
    * If the given Try is a Failure its type parameter will be cast to T, otherwise a ClassCastException will be thrown.
+   *
+   * @param t the {@code Failure<T>} whose type parameter will be cast
+   * @param <T> the original type parameter
+   * @param <U> the resulting type parameter
+   * @return {@code Try<U>}
    */
   public static <T, U> Try<U> failure(final Try<T> t) {
     return (Failure<U>) t;
@@ -88,6 +95,7 @@ public abstract class Try<T> {
    * Factory method to create a Try out of a block of (possibly) throwing code.
    *
    * @param supplier supplier of the value for the Try which possibly throws
+   * @param <T>      type of the payload
    * @return {@code Success<T>} if supplier returns a value, if it throws then a {@code Failure<T>}
    */
   public static <T> Try<T> ofFailable(final TrySupplier<T> supplier) {
@@ -107,14 +115,15 @@ public abstract class Try<T> {
   public static Try<Void> ofFailable(final TryRunnable runnable) {
     try {
       runnable.run();
-      return success((Void) null);
+      return success(null);
     } catch (final Exception e) {
       return failure(e);
     }
   }
 
   /**
-   * Stream Collector that transforms a {@code Stream<Try<T>>} into a {@code Try<List<T>>}.
+   * @param <T> type of the payloads
+   * @return Stream Collector that transforms a {@code Stream<Try<T>>} into a {@code Try<List<T>>}.
    * Iff all {@code Try's} in the input stream are a {@code Success} their values will be collected and
    * returned as a {@code Success<List<T>>}. If the input {@code Stream} contains a {@code Failure}, the output
    * will be a {@code Failure} as well.
@@ -129,7 +138,8 @@ public abstract class Try<T> {
   }
 
   /**
-   * Stream Collector that transforms a {@code Stream<Try<T>>} into a {@code Try<Set<T>>}
+   * @param <T> type of the payloads
+   * @return Stream Collector that transforms a {@code Stream<Try<T>>} into a {@code Try<Set<T>>}
    * Iff all {@code Try's} in the input stream are a {@code Success} their values will be collected and
    * returned as a {@code Success<Set<T>>}. If the input {@code Stream} contains a {@code Failure}, the output
    * will be a {@code Failure} as well.
@@ -172,8 +182,9 @@ public abstract class Try<T> {
 
   /**
    * Returns the value from this {@code Success} or throws the exception if this is a {@code Failure}.
+   * Try to avoid calling this method as much as possible!
    *
-   * @return T
+   * @return if this is a success the payload T, otherwise throws an exception.
    */
   public abstract T get();
 
@@ -206,7 +217,8 @@ public abstract class Try<T> {
    * of the given class {@code e}.
    *
    * @param consumer the function to apply
-   * @param e        the type of the Exception for which we call the given {@code consumer}
+   * @param e        the class representation of the Exception for which we call the given {@code consumer}
+   * @param <E>      the generic type of the Exception
    * @return the original {@code Try<T>}
    */
   public abstract <E extends Exception> Try<T> ifFailure(final Class<E> e, final TryConsumer<E> consumer);
@@ -214,7 +226,8 @@ public abstract class Try<T> {
   /**
    * Returns the given function applied to the value from this {@code Success} or returns this if this is a {@code Failure}.
    *
-   * @param f the mapping function
+   * @param f   the mapping function
+   * @param <U> result type of the mapping
    * @return {@code Try<U>}
    */
   public abstract <U> Try<U> flatMap(final TryFunction<? super T, ? extends Try<? extends U>> f);
@@ -223,7 +236,8 @@ public abstract class Try<T> {
    * Runs the given supplier to transform this {@code Try} if this is a {@code Success} or returns this if this is a {@code Failure}.
    * Note that this method is intended to flatMap functions that discard the value stored in the current {@code Success}.
    *
-   * @param f the mapping function
+   * @param f   the mapping function
+   * @param <U> result type of the mapping
    * @return {@code Try<U>}
    */
   public abstract <U> Try<U> flatMap(final TrySupplier<? extends Try<? extends U>> f);
@@ -231,7 +245,8 @@ public abstract class Try<T> {
   /**
    * Maps the given function to the value from this {@code Success} or returns this if this is a {@code Failure}.
    *
-   * @param f the mapping function
+   * @param f   the mapping function
+   * @param <U> result type of the mapping
    * @return {@code Try<U>}
    */
   public abstract <U> Try<U> map(final TryFunction<? super T, ? extends U> f);
@@ -240,7 +255,8 @@ public abstract class Try<T> {
    * Runs the given supplier to transform the payload if this is a {@code Success} or returns this if this is a {@code Failure}.
    * Note that this method is intended to map functions that discard the value stored in the current {@code Success}.
    *
-   * @param f the mapping function
+   * @param f   the mapping function
+   * @param <U> result type of the mapping
    * @return {@code Try<U>}
    */
   public abstract <U> Try<U> map(final TrySupplier<? extends U> f);
@@ -257,6 +273,7 @@ public abstract class Try<T> {
    * Converts this to a {@code Failure} (containing the given {@code Throwable}) if the predicate is not satisfied.
    *
    * @param predicate used to test the payload
+   * @param t         the {@code Throwable} to use as a payload for the {@code Failure} if the predicate returns false
    * @return {@code Try<T>}
    */
   public abstract Try<T> filter(final TryPredicate<? super T> predicate, final Throwable t);
@@ -293,8 +310,9 @@ public abstract class Try<T> {
    * class {@code e}, otherwise returns this if this is a {@code Success}.
    * {@code recoverWith} is like {@code flatMap} for the {@code Failure} case.
    *
-   * @param f the function to apply if this is a {@code Failure}
-   * @param e the type of the Exception to recover from
+   * @param f   the function to apply if this is a {@code Failure}
+   * @param e   class representing the type of the Exception to recover from
+   * @param <E> the type of the Exception to recover from
    * @return {@code Try<T>}
    */
   public abstract <E extends Exception> Try<T> recoverWith(final Class<E> e, final TryFunction<E, Try<? extends T>> f);
@@ -313,8 +331,9 @@ public abstract class Try<T> {
    * otherwise returns this if this is a {@code Success}.
    * {@code recover} is like {@code map} for the {@code Failure} case.
    *
-   * @param f the function to apply if this is a {@code Failure}
-   * @param e the type of the Exception to recover from
+   * @param f   the function to apply if this is a {@code Failure}
+   * @param e   class representing the type of the Exception to recover from
+   * @param <E> the type of the Exception to recover from
    * @return {@code Try<T>}
    */
   public abstract <E extends Exception> Try<T> recover(final Class<E> e, final TryFunction<E, ? extends T> f);
