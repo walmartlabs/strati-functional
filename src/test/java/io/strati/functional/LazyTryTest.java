@@ -230,11 +230,9 @@ public class LazyTryTest {
 
   @Test
   public void testFilter() {
-    LazyTry<Integer> lazyTryInt = LazyTry.ofFailable(() -> 13);
+    LazyTry<Integer> lazyTryInt = LazyTry.success(13);
     LazyTry<String> lazyTryString = LazyTry.ofFailable(() -> "foo");
-    LazyTry<Integer> failingLazyTry = LazyTry.ofFailable(() -> {
-      throw new Exception();
-    });
+    LazyTry<Integer> failingLazyTry = LazyTry.failure( new Exception());
 
     assertTrue(lazyTryInt.filter(i -> true).run().isSuccess());
     assertEquals("foo", lazyTryString.filter(i -> true).run().get());

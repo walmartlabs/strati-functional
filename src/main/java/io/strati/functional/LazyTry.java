@@ -44,6 +44,14 @@ public class LazyTry<T> {
     this.supplier = supplier;
   }
 
+  public static <T> LazyTry<T> success(final T t) {
+    return new LazyTry<>(() ->  new Success<>(t));
+  }
+
+  public static <T> LazyTry<T> failure(final Throwable t) {
+    return new LazyTry<>(() ->  new Failure<>(t));
+  }
+
   public static <T> LazyTry<T> ofTry(final TrySupplier<Try<T>> s) {
     return new LazyTry<>(s);
   }
