@@ -34,30 +34,29 @@ import java.util.function.Consumer;
  */
 public class CircuitBreaker {
 
-  private enum State {
+  public enum State {
     CLOSED, HALF_OPEN, OPEN
   }
 
-  private String name;
+  private final String name;
+  private final int threshold;
+  private final long timeout;
+
+  private final Consumer<CircuitBreaker> toClosedStateListener;
+  private final Consumer<CircuitBreaker> toHalfOpenStateListener;
+  private final Consumer<CircuitBreaker> toOpenStateListener;
 
   private final Object monitor = new Object();
 
   private State state;
-
   private int failures = 0;
-  private final int threshold;
-  private final long timeout;
   private Throwable lastObservedFailure;
   private long openTime;
 
-  private Consumer<CircuitBreaker> toClosedStateListener;
-  private Consumer<CircuitBreaker> toHalfOpenStateListener;
-  private Consumer<CircuitBreaker> toOpenStateListener;
-
-  CircuitBreaker(final String name, final int threshold, final long timeout,
-                 final Consumer<CircuitBreaker> toClosedStateListener,
-                 final Consumer<CircuitBreaker> toHalfOpenStateListener,
-                 final Consumer<CircuitBreaker> toOpenStateListener) {
+  protected CircuitBreaker(final String name, final int threshold, final long timeout,
+                           final Consumer<CircuitBreaker> toClosedStateListener,
+                           final Consumer<CircuitBreaker> toHalfOpenStateListener,
+                           final Consumer<CircuitBreaker> toOpenStateListener) {
     if (threshold < 1) {
       throw new IllegalArgumentException("Failure threshold should be greater than 0");
     }
@@ -73,14 +72,34 @@ public class CircuitBreaker {
     moveToClosedState();
   }
 
+  /**
+   * Execute a {@code TryRunnable} procedure in a protected context.
+   *
+   * @param protectedCode the procedure that will run in the safe {@code CircuitBreaker} context
+   * @return {@code Try<Void>}
+   */
   public Try<Void> attempt(final TryRunnable protectedCode) {
     return attempt(LazyTry.ofFailable(protectedCode));
   }
 
+  /**
+   * Execute a {@code TrySupplier<T>} in a protected context.
+   *
+   * @param protectedCode the procedure that will run in the safe {@code CircuitBreaker} context
+   * @param <T> return type of the protected procedure
+   * @return {@code Try<T>}
+   */
   public <T> Try<T> attempt(final TrySupplier<T> protectedCode) {
     return attempt(LazyTry.ofFailable(protectedCode));
   }
 
+  /**
+   * Execute a {@code LazyTry<T>} in a protected context.
+   *
+   * @param protectedCode the procedure that will run in the safe {@code CircuitBreaker} context
+   * @param <T> return type of the protected procedure
+   * @return {@code Try<T>}
+   */
   public <T> Try<T> attempt(final LazyTry<T> protectedCode) {
     synchronized (monitor) {
       update();
@@ -99,7 +118,7 @@ public class CircuitBreaker {
       lastObservedFailure = t;
       synchronized (monitor) {
         failures++;
-        if ((State.CLOSED.equals(state) && isThresholdReached()) || State.HALF_OPEN.equals(state)) {
+        if ((State.CLOSED.equals(state) && failures >= threshold) || State.HALF_OPEN.equals(state)) {
           moveToOpenState();
         }
       }
@@ -121,12 +140,18 @@ public class CircuitBreaker {
     }
   }
 
+  /**
+   * change the state of the {@code CircuitBreaker} to CLOSED
+   */
   public void close() {
     synchronized (monitor) {
       moveToClosedState();
     }
   }
 
+  /**
+   * change the state of the {@code CircuitBreaker} to OPEN
+   */
   public void open() {
     synchronized (monitor) {
       moveToOpenState();
@@ -150,39 +175,62 @@ public class CircuitBreaker {
     openTime = System.currentTimeMillis();
   }
 
+  /**
+   * @return true iff the state of the {@code CircuitBreaker} is CLOSED else false
+   */
   public boolean isClosed() {
     update();
     return State.CLOSED.equals(state);
   }
 
+  /**
+   * @return true iff the state of the {@code CircuitBreaker} is HALF_OPEN else false
+   */
   public boolean isHalfOpen() {
     update();
     return State.HALF_OPEN.equals(state);
   }
 
+  /**
+   * @return true iff the state of the {@code CircuitBreaker} is OPEN else false
+   */
   public boolean isOpen() {
     update();
     return State.OPEN.equals(state);
   }
 
-  public boolean isThresholdReached() {
-    return failures >= threshold;
-  }
-
+  /**
+   * @return the (optional) {@code Throwable} from the last attempt that any protected code was run
+   */
   public Optional<Throwable> getFailureFromLastAttempt() {
     return Optional.ofNullable(lastObservedFailure);
   }
 
+  /**
+   * @return the name of the {@code CircuitBreaker}
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * @return the timeout duration (in ms.) of the {@code CircuitBreaker}
+   */
   public long getTimeout() {
     return timeout;
   }
 
+  /**
+   * @return the error threshold of the {@code CircuitBreaker}
+   */
   public int getThreshold() {
     return threshold;
   }
 
+  /**
+   * @return the current state of the {@code CircuitBreaker}
+   */
+  public State getState() {
+    return state;
+  }
 }
