@@ -54,7 +54,7 @@ public interface LazyTry<T> {
       try {
         return s.get();
       } catch (final Exception e) {
-        return Try.<T>failure(e);
+        return Try.failure(e);
       }
     };
   }
@@ -84,11 +84,11 @@ public interface LazyTry<T> {
   }
 
   default <U> LazyTry<U> flatMap(final TryFunction<? super T, ? extends Try<? extends U>> f) {
-    return () -> run().flatMap(t -> f.apply(t));
+    return () -> run().flatMap(f);
   }
 
   default <U> LazyTry<U> flatMap(final TrySupplier<Try<? extends U>> f) {
-    return () -> run().flatMap(f::get);
+    return () -> run().flatMap(f);
   }
 
   default <U> LazyTry<U> map(final TryFunction<? super T, ? extends U> f) {
