@@ -343,4 +343,17 @@ public class LazyTryTest {
   public void testApply() {
     assertEquals("foo", LazyTry.ofFailable(() -> "foo").apply(LazyTry::run).get());
   }
+
+  @Test
+  public void testCreateAsLambda() {
+    LazyTry<String> foo = () -> Try.ofFailable(() -> "foo");
+    assertEquals("foo", foo.run().get());
+
+    LazyTry<String> boom = () -> Try.ofFailable(() -> {
+      throw new RuntimeException("boom");
+    });
+
+    assertTrue(boom.run().isFailure());
+  }
+
 }
