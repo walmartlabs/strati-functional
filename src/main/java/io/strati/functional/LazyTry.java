@@ -36,107 +36,102 @@ import java.util.function.Function;
  * on {@code Try}. For more information regarding specific methods please refer to their
  * {@code Try} counterparts.
  */
-public class LazyTry<T> {
+@FunctionalInterface
+public interface LazyTry<T> {
 
-  private TrySupplier<Try<T>> supplier;
+  Try<T> run();
 
-  private LazyTry(final TrySupplier<Try<T>> supplier) {
-    this.supplier = supplier;
+  static <T> LazyTry<T> success(final T t) {
+    return () -> new Success<>(t);
   }
 
-  public static <T> LazyTry<T> success(final T t) {
-    return new LazyTry<>(() ->  new Success<>(t));
+  static <T> LazyTry<T> failure(final Throwable t) {
+    return () -> new Failure<>(t);
   }
 
-  public static <T> LazyTry<T> failure(final Throwable t) {
-    return new LazyTry<>(() ->  new Failure<>(t));
+  static <T> LazyTry<T> ofTry(final TrySupplier<Try<T>> s) {
+    return () -> {
+      try {
+        return s.get();
+      } catch (final Exception e) {
+        return Try.failure(e);
+      }
+    };
   }
 
-  public static <T> LazyTry<T> ofTry(final TrySupplier<Try<T>> s) {
-    return new LazyTry<>(s);
+  static <T> LazyTry<T> ofFailable(final TrySupplier<T> s) {
+    return () -> Try.ofFailable(s);
   }
 
-  public static <T> LazyTry<T> ofFailable(final TrySupplier<T> s) {
-    return new LazyTry<>(() -> Try.ofFailable(s));
+  static LazyTry<Void> ofFailable(final TryRunnable r) {
+    return () -> Try.ofFailable(r);
   }
 
-  public static LazyTry<Void> ofFailable(final TryRunnable r) {
-    return new LazyTry<>(() -> Try.ofFailable(r));
+  default LazyTry<T> ifSuccess(final TryConsumer<T> f) {
+    return () -> run().ifSuccess(f);
   }
 
-  public LazyTry<T> ifSuccess(final TryConsumer<T> f) {
-    return new LazyTry<>(() -> supplier.get().ifSuccess(f));
+  default LazyTry<T> ifSuccess(final TryRunnable r) {
+    return () -> run().ifSuccess(r);
   }
 
-  public LazyTry<T> ifSuccess(final TryRunnable r) {
-    return new LazyTry<>(() -> supplier.get().ifSuccess(r));
+  default LazyTry<T> ifFailure(final TryConsumer<Throwable> c) {
+    return () -> run().ifFailure(c);
   }
 
-  public LazyTry<T> ifFailure(final TryConsumer<Throwable> c) {
-    return new LazyTry<>(() -> supplier.get().ifFailure(c));
+  default <E extends Exception> LazyTry<T> ifFailure(final Class<E> e, final TryConsumer<E> c) {
+    return () -> run().ifFailure(e, c);
   }
 
-  public <E extends Exception> LazyTry<T> ifFailure(final Class<E> e, final TryConsumer<E> c) {
-    return new LazyTry<>(() -> supplier.get().ifFailure(e, c));
+  default <U> LazyTry<U> flatMap(final TryFunction<? super T, ? extends Try<? extends U>> f) {
+    return () -> run().flatMap(f);
   }
 
-  public <U> LazyTry<U> flatMap(final TryFunction<? super T, ? extends Try<? extends U>> f) {
-    return new LazyTry<>(() -> supplier.get().flatMap(t -> f.apply(t)));
+  default <U> LazyTry<U> flatMap(final TrySupplier<Try<? extends U>> f) {
+    return () -> run().flatMap(f);
   }
 
-  public <U> LazyTry<U> flatMap(final TrySupplier<Try<? extends U>> f) {
-    return new LazyTry<>(() -> supplier.get().flatMap(f::get));
+  default <U> LazyTry<U> map(final TryFunction<? super T, ? extends U> f) {
+    return () -> run().map(f);
   }
 
-  public <U> LazyTry<U> map(final TryFunction<? super T, ? extends U> f) {
-    return new LazyTry<>(() -> supplier.get().map(f));
+  default <U> LazyTry<U> map(final TrySupplier<? extends U> f) {
+    return () -> run().map(f);
   }
 
-  public <U> LazyTry<U> map(final TrySupplier<? extends U> f) {
-    return new LazyTry<>(() -> supplier.get().map(f));
+  default LazyTry<T> filter(final TryPredicate<? super T> predicate) {
+    return () -> run().filter(predicate);
   }
 
-  public LazyTry<T> filter(final TryPredicate<? super T> predicate) {
-    return new LazyTry<>(() -> supplier.get().filter(predicate));
+  default LazyTry<T> filter(final TryPredicate<? super T> predicate, final Throwable t) {
+    return () -> run().filter(predicate, t);
   }
 
-  public LazyTry<T> filter(final TryPredicate<? super T> predicate, final Throwable t) {
-    return new LazyTry<>(() -> supplier.get().filter(predicate, t));
+  default LazyTry<T> filter(final TryPredicate<? super T> predicate, final TryFunction<? super T, Try<? extends T>> orElse) {
+    return () -> run().filter(predicate, orElse);
   }
 
-  public LazyTry<T> filter(final TryPredicate<? super T> predicate, final TryFunction<? super T, Try<? extends T>> orElse) {
-    return new LazyTry<>(() -> supplier.get().filter(predicate, orElse));
+  default LazyTry<T> filter(final TryPredicate<? super T> predicate, final TrySupplier<Try<? extends T>> orElse) {
+    return () -> run().filter(predicate, orElse);
   }
 
-  public LazyTry<T> filter(final TryPredicate<? super T> predicate, final TrySupplier<Try<? extends T>> orElse) {
-    return new LazyTry<>(() -> supplier.get().filter(predicate, orElse));
+  default LazyTry<T> recoverWith(final TryFunction<Throwable, Try<? extends T>> f) {
+    return () -> run().recoverWith(f);
   }
 
-  public LazyTry<T> recoverWith(final TryFunction<Throwable, Try<? extends T>> f) {
-    return new LazyTry<>(() -> supplier.get().recoverWith(f));
+  default <E extends Exception> LazyTry<T> recoverWith(final Class<E> e, final TryFunction<E, Try<? extends T>> f) {
+    return () -> run().recoverWith(e, f);
   }
 
-  public <E extends Exception> LazyTry<T> recoverWith(final Class<E> e, final TryFunction<E, Try<? extends T>> f) {
-    return new LazyTry<>(() -> supplier.get().recoverWith(e, f));
+  default LazyTry<T> recover(final TryFunction<Throwable, ? extends T> f) {
+    return () -> run().recover(f);
   }
 
-  public LazyTry<T> recover(final TryFunction<Throwable, ? extends T> f) {
-    return new LazyTry<>(() -> supplier.get().recover(f));
+  default <E extends Exception> LazyTry<T> recover(final Class<E> e, final TryFunction<E, ? extends T> f) {
+    return () -> run().recover(e, f);
   }
 
-  public <E extends Exception> LazyTry<T> recover(final Class<E> e, final TryFunction<E, ? extends T> f) {
-    return new LazyTry<>(() -> supplier.get().recover(e, f));
-  }
-
-  public Try<T> run() {
-    try {
-      return supplier.get();
-    } catch (final Exception e) {
-      return Try.failure(e);
-    }
-  }
-
-  public <U> U apply(final Function<LazyTry<T>, ? extends U> f) {
+  default <U> U apply(final Function<LazyTry<T>, ? extends U> f) {
     return f.apply(this);
   }
 
