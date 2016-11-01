@@ -16,13 +16,27 @@
 
 package io.strati.functional.exception;
 
+import io.strati.functional.resilience.CircuitBreaker;
+
 /**
  * @author WalmartLabs
  * @author Georgi Khomeriki [gkhomeriki@walmartlabs.com]
  */
 
 public class CircuitBreakerOpenException extends RuntimeException {
-  public CircuitBreakerOpenException(final String msg, final Throwable cause) {
+  private final CircuitBreaker.State state;
+
+  public CircuitBreakerOpenException(final String msg, final Throwable cause, CircuitBreaker.State state) {
     super(msg, cause);
+    this.state = state;
+  }
+
+  /**
+   * @return The state of the circuit breaker when this exception was thrown,
+   * either {@link io.strati.functional.resilience.CircuitBreaker.State#OPEN} or
+   * {@link io.strati.functional.resilience.CircuitBreaker.State#HALF_OPEN}
+   */
+  public CircuitBreaker.State getState() {
+    return state;
   }
 }

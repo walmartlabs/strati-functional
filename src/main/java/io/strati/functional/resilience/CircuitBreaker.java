@@ -34,6 +34,8 @@ import java.util.function.Consumer;
  */
 public class CircuitBreaker {
 
+
+
   public enum State {
     CLOSED, HALF_OPEN, OPEN
   }
@@ -46,6 +48,8 @@ public class CircuitBreaker {
   private final Consumer<CircuitBreaker> toHalfOpenStateListener;
   private final Consumer<CircuitBreaker> toOpenStateListener;
 
+  private final HalfOpenFilter halfOpenFilter;
+
   private final Object monitor = new Object();
 
   private State state;
@@ -54,6 +58,7 @@ public class CircuitBreaker {
   private long openTime;
 
   protected CircuitBreaker(final String name, final int threshold, final long timeout,
+                           final Integer concurrentCallsInHalfOpenState,
                            final Consumer<CircuitBreaker> toClosedStateListener,
                            final Consumer<CircuitBreaker> toHalfOpenStateListener,
                            final Consumer<CircuitBreaker> toOpenStateListener) {
@@ -69,6 +74,7 @@ public class CircuitBreaker {
     this.toClosedStateListener = toClosedStateListener;
     this.toHalfOpenStateListener = toHalfOpenStateListener;
     this.toOpenStateListener = toOpenStateListener;
+    this.halfOpenFilter = concurrentCallsInHalfOpenState != null ? new HalfOpenFilter(concurrentCallsInHalfOpenState) : null;
     moveToClosedState();
   }
 
@@ -103,8 +109,17 @@ public class CircuitBreaker {
   public <T> Try<T> attempt(final LazyTry<T> protectedCode) {
     synchronized (monitor) {
       update();
-      if (State.OPEN.equals(state)) {
-        return Try.failure(new CircuitBreakerOpenException("Circuit breaker open, attempt aborted", lastObservedFailure));
+      switch (state) {
+        case OPEN:
+          return Try.failure(new CircuitBreakerOpenException("Circuit breaker open, attempt aborted", lastObservedFailure, state));
+        case HALF_OPEN:
+          if (halfOpenFilter != null && !halfOpenFilter.enter()) {
+            return Try.failure(new CircuitBreakerOpenException("Circuit breaker half-open, attempt aborted", lastObservedFailure, state));
+          }
+          break;
+        case CLOSED:
+          // No problem just continue
+          break;
       }
     }
 
@@ -118,8 +133,18 @@ public class CircuitBreaker {
       lastObservedFailure = t;
       synchronized (monitor) {
         failures++;
-        if ((State.CLOSED.equals(state) && failures >= threshold) || State.HALF_OPEN.equals(state)) {
-          moveToOpenState();
+        switch (state) {
+          case CLOSED:
+            if (failures >= threshold) {
+              moveToOpenState();
+            }
+            break;
+          case HALF_OPEN:
+            if (halfOpenFilter != null) {
+              halfOpenFilter.exit();
+            }
+            moveToOpenState();
+            break;
         }
       }
       return Try.failure(t);
@@ -127,6 +152,10 @@ public class CircuitBreaker {
 
     synchronized (monitor) {
       if (State.HALF_OPEN.equals(state)) {
+        if (halfOpenFilter != null) {
+          halfOpenFilter.exit();
+        }
+        // TODO: Only switch back to closed after a certain number of successes?
         moveToClosedState();
       }
     }
@@ -173,6 +202,9 @@ public class CircuitBreaker {
     toOpenStateListener.accept(this);
     state = State.OPEN;
     openTime = System.currentTimeMillis();
+    if (halfOpenFilter != null) {
+      halfOpenFilter.reset();
+    }
   }
 
   /**
