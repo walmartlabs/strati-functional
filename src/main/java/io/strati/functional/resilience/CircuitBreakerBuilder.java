@@ -46,6 +46,7 @@ public class CircuitBreakerBuilder {
   private Consumer<CircuitBreaker> toClosedStateListener;
   private Consumer<CircuitBreaker> toHalfOpenStateListener;
   private Consumer<CircuitBreaker> toOpenStateListener;
+  private Integer concurrentCallsInHalfOpenState = null;
 
   /**
    * Instantiate a new {@code CircuitBreakerBuilder}.
@@ -88,6 +89,18 @@ public class CircuitBreakerBuilder {
    */
   public CircuitBreakerBuilder threshold(final int threshold) {
     this.threshold = threshold;
+    return this;
+  }
+
+  /**
+   * Set the number of concurrent calls of the protected code if the circuit breaker in half open mode.
+   *
+   * @param concurrentCallsInHalfOpenState the maximum number of concurrent calls when the
+   *                                       circuit breaker is in half open state.
+   * @return {@code CircuitBreakerBuilder}
+   */
+  public CircuitBreakerBuilder concurrentCallsInHalfOpenState(final int concurrentCallsInHalfOpenState) {
+    this.concurrentCallsInHalfOpenState = concurrentCallsInHalfOpenState;
     return this;
   }
 
@@ -218,7 +231,7 @@ public class CircuitBreakerBuilder {
     if (timeout < 1) {
       timeout = DEFAULT_TIMEOUT;
     }
-    return new CircuitBreaker(name, threshold, timeout,
+    return new CircuitBreaker(name, threshold, timeout, concurrentCallsInHalfOpenState,
         getOrCreateListener(toClosedStateListener),
         getOrCreateListener(toHalfOpenStateListener),
         getOrCreateListener(toOpenStateListener));

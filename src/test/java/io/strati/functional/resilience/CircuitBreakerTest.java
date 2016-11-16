@@ -3,9 +3,15 @@ package io.strati.functional.resilience;
 import io.strati.functional.Try;
 import io.strati.functional.exception.CircuitBreakerOpenException;
 import io.strati.functional.exception.WrappedCheckedException;
+import io.strati.functional.function.TryRunnable;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -352,6 +358,66 @@ public class CircuitBreakerTest {
     assertTrue("CB should be open", cb.isOpen());
     cb.close();
     assertTrue("CB should be closed", cb.isClosed());
+  }
+
+
+  @Test
+  public void testCBShouldLimitRetriesInHalfOpenState() throws InterruptedException {
+    // Given: A CircuitBreaker in half-open state that allows 2 concurrent threads in half-open state
+    CircuitBreaker cb = CircuitBreakerBuilder.create()
+        .threshold(1)
+        .timeout(100)
+        .concurrentCallsInHalfOpenState(2)
+        .build();
+
+    assertTrue("CB should be closed", cb.isClosed());
+
+    // Let it trip
+    Try<Void> result1 = cb.attempt(() -> System.out.println(3 / 0));
+    Thread.sleep(200);
+    assertTrue(cb.isHalfOpen());
+
+    // When: I execute a long-running piece of code 20 times concurrently
+    final TryRunnable code = new TryRunnable() {
+      final AtomicInteger concurrentCalls = new AtomicInteger();
+      final AtomicInteger maxConcurrentCalls = new AtomicInteger();
+      @Override
+      public void run() {
+        int currentConcurrentCalls = concurrentCalls.incrementAndGet();
+        if (maxConcurrentCalls.get() < currentConcurrentCalls) {
+          maxConcurrentCalls.set(currentConcurrentCalls);
+        }
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    };
+
+    final AtomicInteger successes = new AtomicInteger();
+    final List<Throwable> failures = new CopyOnWriteArrayList<>();
+
+    final int threadCount = 20;
+    ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    for (int i = 0; i < threadCount; i++) {
+      executor.submit(() -> {
+        Try<Void> result = cb.attempt(code);
+        result
+            .ifSuccess(() -> successes.incrementAndGet())
+            .ifFailure(failures::add);
+      });
+    }
+    executor.awaitTermination(10, TimeUnit.SECONDS);
+
+    // Then: 2 threads were allowed to execute the action, the rest was refused.
+    assertEquals(2, successes.get());
+    assertEquals(18, failures.size());
+    failures.stream().filter(throwable -> throwable instanceof CircuitBreakerOpenException)
+        .map(throwable -> (CircuitBreakerOpenException) throwable)
+        .forEach(e -> assertEquals(CircuitBreaker.State.HALF_OPEN, e.getState()));
+
+    assertTrue(cb.isClosed());
   }
 
   private static <T> void assertFailure(Class<? extends Throwable> ex, Try<T> value) {
