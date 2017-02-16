@@ -130,6 +130,24 @@ public abstract class Optional<T> {
    *                              null
    */
   public abstract Optional<T> ifPresent(final Consumer<? super T> consumer);
+  
+  /**
+   * If a value is present, invoke the specified consumer with the value,
+   * otherwise do nothing.
+   * <p>
+   * Note: the (backwards compatible) difference with {@code java.util.Optional}
+   * here is that {@code ifPresent} returns the current {@code Optional} instead
+   * of {@code void}, this is so that expressions don't have to be broken up
+   * in order to do side-effects (i.e. perform actions).
+   *
+   * @param consumer block to be executed if a value is present
+   * @param t        the type of the value for which we call the given {@code consumer}
+   * @return This instance of {@code Optional} will be returned, no mutations will
+   * take place.
+   * @throws NullPointerException if value is present and {@code consumer} is
+   *                              null
+   */
+  public abstract Optional<T> ifPresent(Class<? extends T> t, Consumer<? super T> consumer);
 
   /**
    * If no value is present, invoke the specified runnable, otherwise do nothing.
@@ -313,6 +331,14 @@ final class Present<T> extends Optional<T> {
     consumer.accept(value);
     return this;
   }
+  
+  @Override
+  public Optional<T> ifPresent(Class<? extends T> t, final Consumer<? super T> consumer) {
+    if(t.isInstance(value)){
+      consumer.accept(value);
+    }
+    return this;
+  }
 
   @Override
   public Optional<T> ifEmpty(final Runnable runnable) {
@@ -395,6 +421,11 @@ final class Empty<T> extends Optional<T> {
 
   @Override
   public Optional<T> ifPresent(final Consumer<? super T> consumer) {
+    return this;
+  }
+  
+  @Override
+  public Optional<T> ifPresent(Class<? extends T> t, final Consumer<? super T> consumer) {
     return this;
   }
 

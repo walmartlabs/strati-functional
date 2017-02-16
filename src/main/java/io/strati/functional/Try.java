@@ -197,6 +197,16 @@ public abstract class Try<T> {
   public abstract Try<T> ifSuccess(final TryConsumer<? super T> consumer);
 
   /**
+   * Applies the given {@code consumer} function if this is a {@code Success} and the value is an instance
+   * of the given class {@code t}
+   *
+   * @param consumer the function to apply
+   * @param t        the type of the value for which we call the given {@code consumer}
+   * @return the original {@code Try<T>}
+   */
+  public abstract Try<T> ifSuccess(final Class<? extends T> t, final TryConsumer<? super T> consumer);
+
+  /**
    * Executes the given {@code Runnable} if this is a {@code Success} and returns this, otherwise directly returns this.
    *
    * @param runnable the runnable action that performs side-effects
@@ -407,6 +417,18 @@ final class Success<T> extends Try<T> {
       return failure(e);
     }
   }
+  
+  @Override
+  public Try<T> ifSuccess(Class<? extends T> t, TryConsumer<? super T> consumer) {
+    try {
+      if(t.isInstance(value)){
+        consumer.accept(value);
+      }
+      return this;
+    } catch (final Exception e) {
+      return failure(e);
+    }
+  }
 
   @Override
   public Try<T> ifSuccess(final TryRunnable runnable) {
@@ -569,6 +591,11 @@ final class Failure<T> extends Try<T> {
 
   @Override
   public Try<T> ifSuccess(TryRunnable runnable) {
+    return this;
+  }
+  
+  @Override
+  public Try<T> ifSuccess(Class<? extends T> t, TryConsumer<? super T> consumer) {
     return this;
   }
 

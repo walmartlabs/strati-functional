@@ -74,6 +74,20 @@ public class OptionalTest {
     assertTrue(test.get());
 
     ofNullable("foo").ifPresent(s -> assertEquals("foo", s));
+    
+    // Testing try for handling success for value class hierarchy
+    Optional<TestObjectSuper> tryOfParent = Optional.of(new TestObjectSibling());
+    
+    tryOfParent.ifPresent(TestObject.class, e -> {
+      throw new AssertionError("Wrong ifSuccess branch entered!");
+    });
+    
+    test.set(false);
+    tryOfParent.ifPresent(TestObjectSibling.class, e -> {
+      test.set(true);
+      assertTrue(TestObjectSibling.class.isInstance(e));
+    });
+    assertTrue(test.get());
   }
 
   @Test
@@ -227,6 +241,9 @@ public class OptionalTest {
   private class TestObject extends TestObjectSuper {
   }
 
+  private class TestObjectSibling extends TestObjectSuper {
+  }
+  
   private class TestObjectSub extends TestObject {
   }
 }
