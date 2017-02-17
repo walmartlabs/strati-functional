@@ -83,6 +83,21 @@ public class TryTest {
     assertTrue(success(13).ifSuccess(() -> {
       throw new Exception();
     }).isFailure());
+    
+    
+    // Testing try for handling success for value class hierarchy
+    Try<TestObjectSuper> tryOfParent = success(new TestObjectSibling());
+    
+    tryOfParent.ifSuccess(TestObject.class, e -> {
+      throw new AssertionError("Wrong ifSuccess branch entered!");
+    });
+    
+    test.set(false);
+    tryOfParent.ifSuccess(TestObjectSibling.class, e -> {
+      test.set(true);
+      assertTrue(TestObjectSibling.class.isInstance(e));
+    });
+    assertTrue(test.get());
   }
 
   @Test
@@ -484,6 +499,9 @@ public class TryTest {
   private class TestObject extends TestObjectSuper {
   }
 
+  private class TestObjectSibling extends TestObjectSuper {
+  }
+  
   private class TestObjectSub extends TestObject {
   }
 
